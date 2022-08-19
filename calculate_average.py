@@ -6,12 +6,14 @@ import logging
 logger = logging.getLogger(__file__)
 
 def split_xlsx_in_sondenarray(filename):
-    raw_data = pd.read_excel(args.filename, index_col=0) #hier muss die erste Zeile weggeschmissen werden
+    raw_data = pd.read_excel(args.filename, index_col=0, skiprows=1) #hier muss die erste Zeile weggeschmissen werden
+    raw_data = raw_data.dropna(axis=0) # delete all rows with nan values
+    logger.debug(raw_data.info())
     sonden_data = []
-    sonden_data[0] = raw_data #aber nur spalten 1-14
-    sonden_data[1] = raw_data #aber nur spalten 15-28
-    sonden_data[2] = raw_data #aber nur spalten 29-42
-    sonden_data[3] = raw_data #aber nur spalten 43-56
+    sonden_data.append(raw_data.iloc[:, :14 ]) #aber nur spalten 1-14
+    sonden_data.append(raw_data.iloc[:, 15:28 ]) #aber nur spalten 15-28
+    sonden_data.append(raw_data.iloc[:, 28:42 ]) #aber nur spalten 29-42
+    sonden_data.append(raw_data.iloc[:, 42:56 ]) #aber nur spalten 43-56
     return sonden_data
 
 def generate_analysis_dict(sonde, sonden_df):
@@ -53,16 +55,14 @@ if __name__ == '__main__':
     parser.add_argument("-i", dest="filename", required=True,
                         help="input file", metavar="FILE")
     args = parser.parse_args()
-
-
+    
     sonden_data = split_xlsx_in_sondenarray(args.filename)
 
-    sonden_dict = []
-    for n in range(0,3):
-        sonden_dict[n] = generate_analysis_dict(sonden_data[n])
+    sonden_dictlist = [generate_analysis_dict(sonde="test", sonden_df = x) for x in sonden_data]
 
-    for set in sonden_dict:
-        with open(str(set)+"_"+str(sonden_dict["Tag"]),"w") as outfile:
+    for set in sonden_dictlist:
+        logger.debug(set)
+        with open(str(set.get("Sonde", "NoSonde"))+"_"+str(set.get("Tag", "unbekannterTag")),"w") as outfile:
             jsonstr = json.dumps(set)
             logger.debug(jsonstr)
             outfile.write(jsonstr)
