@@ -1,6 +1,9 @@
 import json
 import argparse
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__file__)
 
 def split_xlsx_in_sondenarray(filename):
     raw_data = pd.read_excel(args.filename, index_col=0) #hier muss die erste Zeile weggeschmissen werden
@@ -43,10 +46,14 @@ def generate_analysis_dict(sonde, sonden_df):
 
 
 if __name__ == '__main__':
+    FORMAT = '%(levelname)s:%(message)s'
+    logging.basicConfig(format=FORMAT,
+                        level=logging.DEBUG)
     parser = argparse.ArgumentParser(description="Durchschnittsbestimmung Sensordatenfile")
     parser.add_argument("-i", dest="filename", required=True,
                         help="input file", metavar="FILE")
     args = parser.parse_args()
+
 
     sonden_data = split_xlsx_in_sondenarray(args.filename)
 
@@ -57,4 +64,5 @@ if __name__ == '__main__':
     for set in sonden_dict:
         with open(str(set)+"_"+str(sonden_dict["Tag"]),"w") as outfile:
             jsonstr = json.dumps(set)
+            logger.debug(jsonstr)
             outfile.write(jsonstr)
